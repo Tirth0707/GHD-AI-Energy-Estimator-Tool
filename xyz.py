@@ -1,9 +1,7 @@
 import os
-import json
 
 import streamlit as st
 import openai
-from streamlit import markdown
 
 # Configuring Openai - api key
 working_dir = os.path.dirname(os.path.abspath(__file__))
