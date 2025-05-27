@@ -1,58 +1,72 @@
-import os
 import streamlit as st
 import openai
+import os
 
-# Configuring Openai - api key
-openai.api_key = "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"
+# OpenAI API key 
+openai.api_key = "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"  # Replace with your actual API key
 
-# Configuring streamlit page settings
-st.set_page_config(
-    page_title="💬" "GHD AI Energy Estimator Tool",
-    page_icon="🤖",
-    layout="centered"
+# Function to ask GPT a question, strictly limited to energy consumption topics
+def ask_energy_question(question):
+    try:
+        response = openai.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are an expert energy consultant. Only answer questions strictly related to "
+                        "energy consumption, usage, efficiency, HVAC, insulation, power costs, and related engineering. "
+                        "If the user asks anything outside of these domains, in a funny way say you are only trained to respond "
+                        "to energy-related topics."
+                    )
+                },
+                {"role": "user", "content": question}
+            ],
+            temperature=0.3,
+            max_tokens=300
+        )
+        return response.choices[0].message.content
+
+    except openai.APIError as e:
+        return f"OpenAI API Error: {e}"
+    except Exception as ex:
+        return f"Unexpected error: {ex}"
+
+# Streamlit UI Setup
+st.set_page_config(page_title="Energy Estimator", page_icon="🔋")
+
+# --- Header Section ---
+st.markdown(
+    """
+    <div style='text-align: center;'>
+        <h1 style='color: #2c3e50;'>🔋 AI Energy Estimation Assistant</h1>
+        <p style='font-size:18px;'>Here to answer questions related to energy consumption, usage, and efficiency.</p>
+    </div>
+    """, unsafe_allow_html=True
 )
 
-# Initialize chat session in streamlit if not already present
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# --- Input Section ---
+with st.container():
+    st.subheader("💡 Ask Your Energy-Related Question")
+    st.markdown("*Examples:*\n- How much energy is needed to cool a 1200 sq ft house?\n- What's the power usage of an AC running for 6 hours a day?\n- How can I improve insulation to reduce heating costs?")
+    
+    question = st.text_input("Enter your question below:", placeholder="e.g., energy required to cool a 1200 sq ft house")
 
-# Streamlit Page title
-st.title("🤖" "GHD AI Energy Estimator Tool")
+    if st.button("🔍 Get Estimate"):
+        if question.strip():
+            with st.spinner("Calculating energy insights..."):
+                answer = ask_energy_question(question)
+                st.success("✅ Estimate:")
+                st.write(answer)
+        else:
+            st.warning("Please enter a question.")
 
-#display chat history
-for message in st.session_state.chat_history:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# input field for user's message
-user_prompt = st.chat_input("Ask me about anything related to Energy consumption.")
-
-if user_prompt:
-
-    # add user's message to chat and display it streamlit run src/main.py
-    st.chat_message("user").markdown(user_prompt)
-    st.session_state.chat_history.append({"role": "user", "content": user_prompt})
-
-    # send user's message to GPT-4o and get a response
-    response = openai.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": ( "You are an expert consultant. Only answer questions strictly related to" 
-                                            "energy consumption, usage, efficiency, HVAC, insulation, power costs, and related engineering."
-                                            "If the user asks anything outside of these domains, in a funny way say you are only trained to respond"
-                                            "to energy-related topics."
-                                            )
-            },
-            *st.session_state.chat_history
-        ]
-    )
-
-    assistant_response = response.choices[0].message.content
-    st.session_state.chat_history.append({"role": "assistant", "content": assistant_response})
-
-    # display GPT-4o's response
-    with st.chat_message("assistant"):
-        st.markdown(assistant_response)
-
-
-
+# --- Footer ---
+st.markdown(
+    """
+    <hr style="margin-top: 2em;">
+    <div style='text-align: center; font-size: 14px; color: gray;'>
+        Built using GPT-4o by IntuiNext Inc. | Restricted to energy usage topics only.
+    </div>
+    """, unsafe_allow_html=True
+)
